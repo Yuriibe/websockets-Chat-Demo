@@ -17,15 +17,21 @@ io.on('connection', (socket) => {
     connectedUser.push(username)
     io.emit('userConnect', {username: username, onlineUser: connectedUser})
 
-    socket.on('chatMessage', (msg) => {
-        socket.on('whisperName', (whisperName) => {
-            io.emit('chatMessage', {username: username, receiver: whisperName, text: msg});
-        });
-        socket.on('broadcast', (username) => {
-            io.emit('chatMessage', {username: username, text: msg});
-        });
+    socket.on('chatMessage', (data) => {
+        console.log('message: ' + data.text);
+        if (data.isWhisper) {
+            io.emit('chatMessage', {username: username, receiver: data.whisperRecipient, text: data.text});
+        } else {
+            // Handle broadcast
+            io.emit('chatMessage', {username: username, text: data.text});
+        }
+    });
 
-        console.log('message: ' + msg);
+    socket.on('whisperName', (whisperName) => {
+        io.emit('chatMessage', {username: username, receiver: whisperName, text: msg});
+    });
+    socket.on('broadcast', (username) => {
+        io.emit('chatMessage', {username: username, text: msg});
     });
 
     socket.on('userTyping', (username) => {

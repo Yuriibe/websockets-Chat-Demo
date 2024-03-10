@@ -135,15 +135,19 @@
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (input.value) {
-            socket.emit('chatMessage', input.value);
-            if (whisperName.value !== "") {
-                socket.emit('whisperName', whisperName.value);
-            } else {
-                socket.emit('broadcast', username)
-            }
+            const isWhisper = whisperName.value !== "";
+            const messageData = {
+                text: input.value,
+                isWhisper: isWhisper,
+                whisperRecipient: isWhisper ? whisperName.value : null
+            };
+
+            socket.emit('chatMessage', messageData);
 
             document.getElementById('username').innerHTML = '';
             input.value = '';
+            whisperName.value = '';
+
         }
     });
 
@@ -164,8 +168,6 @@
             console.log(newUserItem.textContent);
             onlineUser.appendChild(newUserItem);
         }
-
-
     });
 
     socket.on('chatMessage', function (data) {
@@ -204,10 +206,6 @@
 
     }
 
-
-    function myCallback(a) {
-        console.log(a);
-    }
 
 </script>
 </body>
