@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO chat</title>
+    <style>
+        body {
+            margin: 0;
+            padding-bottom: 3rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #form {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.25rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            height: 3rem;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+        }
+
+        #input {
+            border: none;
+            padding: 0 1rem;
+            flex-grow: 1;
+            border-radius: 2rem;
+            margin: 0.25rem;
+        }
+
+        #whisper {
+            border: none;
+            border-radius: 2rem;
+        }
+
+        #input:focus {
+            outline: none;
+        }
+
+        #form > button {
+            background: #333;
+            border: none;
+            padding: 0 1rem;
+            margin: 0.25rem;
+            border-radius: 3px;
+            outline: none;
+            color: #fff;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #messages > li {
+            padding: 0.5rem 1rem;
+        }
+
+        #messages > li:nth-child(odd) {
+            background: #efefef;
+        }
+
+        #container {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        #chatBox {
+            flex: 7;
+            width: 100%;
+        }
+
+        #onlineUser {
+            border: black solid 1px;
+            flex: 1;
+            height: 100vh;
+            background-color: black;
+            color: white;
+            width: 5vw;
+        }
+
+        li::marker {
+            color: green;
+        }
+
+        .privateMessage {
+            color: purple;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div id="chatBox">
+        <ul id="messages"></ul>
+
+        <div id="userTyping">
+            <p id="username"></p>
+        </div>
+        <form id="form" action="">
+            <input id="whisper" autocomplete="off"/>
+            <input id="input" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+    </div>
+    <div id="onlineUser">
+        <ul id="userList"></ul>
+    </div>
+</div>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+    checkIfUsername()
+    const username = sessionStorage.getItem("username")
+    var socket = io({
+        query: {
+            token: username,
+        }
+    });
+
+
+    var form = document.getElementById('form');
+    var input = document.getElementById('input');
+    let whisperName = document.getElementById('whisper')
+
+    input.addEventListener("input", (event) => {
+        socket.emit('userTyping', username)
+    })
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (input.value) {
+            socket.emit('chatMessage', input.value);
+            if (whisperName.value !== "") {
+                socket.emit('whisperName', whisperName.value);
+            } else {
+                socket.emit('broadcast', username)
+            }
+
+            document.getElementById('username').innerHTML = '';
+            input.value = '';
+        }
+    });
+
+    socket.on('userTyping', function (data) {
+        document.getElementById('username').innerHTML = data.username + ' is typing!';
+
+    });
+
+    socket.on('userConnect', function (data) {
+        const item = document.createElement('li');
+        const onlineUser = document.getElementById('userList');
+        item.textContent = data.username + ' has connected!';
+        document.getElementById('messages').appendChild(item);
+
+        for (let i = 0; i < data.onlineUser.length; i++) {
+            let newUserItem = document.createElement('li');
+            newUserItem.textContent = data.onlineUser[i];
+            console.log(newUserItem.textContent);
+            onlineUser.appendChild(newUserItem);
+        }
+
+
+    });
+
+    socket.on('chatMessage', function (data) {
+        const item = document.createElement('li');
+        if (data.receiver) {
+            if (data.receiver === username || data.username === username) {
+                item.textContent = data.username + ': ' + data.text;
+                item.classList.add('privateMessage');
+                document.getElementById('messages').appendChild(item);
+                document.getElementById('username').innerHTML = '';
+            }
+        } else {
+            item.textContent = data.username + ': ' + data.text;
+            document.getElementById('messages').appendChild(item);
+            document.getElementById('username').innerHTML = '';
+        }
+
+
+    });
+
+    socket.on('userDisconnect', function (username) {
+        const item = document.createElement('li');
+        item.textContent = username.username + ' has disconnected!';
+        document.getElementById('messages').appendChild(item);
+
+
+    });
+
+
+    function checkIfUsername() {
+        if (!sessionStorage.getItem("username") || sessionStorage.getItem("username") === "null") {
+            let username = prompt('set a Username');
+            sessionStorage.setItem("username", username);
+            console.log(username);
+        }
+
+    }
+
+
+    function myCallback(a) {
+        console.log(a);
+    }
+
+</script>
+</body>
+</html>
