@@ -174,7 +174,7 @@
         const item = document.createElement('li');
         if (data.receiver) {
             if (data.receiver === username || data.username === username) {
-                item.textContent = data.username + ': ' + data.text;
+                item.textContent = data.username + ' -> ' + data.receiver +': ' + data.text;
                 item.classList.add('privateMessage');
                 document.getElementById('messages').appendChild(item);
                 document.getElementById('username').innerHTML = '';
